@@ -14,22 +14,24 @@ import java.nio.ByteOrder;
  */
 public class AWTGraphicsHelper {
 
-    GDXGraphics graphics;
+    private GDXGraphics graphics;
 
     /**
      * Reference: http://badlogicgames.com/forum/viewtopic.php?t=1000
      */
     public void drawImage(BufferedImage image, int x, int y) {
-        int w = image.getWidth();
         int h = image.getHeight();
 
-        final byte[] bytes = getBytes(image);
-        if (bytes == null) return;
+        Texture texture = buildTexture(image);
 
-        drawImage(bytes, w, h, x, y);
+        graphics.beginBatch();
+        graphics.getBatch().draw(texture, x, graphics.getHeight() - h + y);
+        graphics.endBatch();
+
+        texture.dispose();
     }
 
-    public void drawImage(byte[] bytes, int w, int h, int x, int y) {
+    public void drawBytes(byte[] bytes, int w, int h, int x, int y) {
         Pixmap pixmap = new Pixmap(w, h, Pixmap.Format.RGB888);
 
         pixmap.getPixels().put(bytes);
@@ -44,6 +46,28 @@ public class AWTGraphicsHelper {
         graphics.endBatch();
 
         texture.dispose();
+    }
+
+    public static Texture buildTexture(BufferedImage image) {
+        final byte[] bytes = getBytes(image);
+        if (bytes == null) {
+            return null;
+        }
+
+        return buildTexture(bytes, image.getWidth(), image.getHeight());
+    }
+
+    public static Texture buildTexture(byte[] bytes, int w, int h) {
+        Pixmap pixmap = new Pixmap(w, h, Pixmap.Format.RGB888);
+
+        pixmap.getPixels().put(bytes);
+        // Do not remove or you will get IllegalArgumentException
+        pixmap.getPixels().flip();
+
+        Texture texture = new Texture(pixmap);
+        pixmap.dispose();
+
+        return texture;
     }
 
     public static byte[] getBytes(BufferedImage image) {
